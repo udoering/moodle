@@ -694,6 +694,11 @@ class OAuthDataStore {
 }
 
 class OAuthUtil {
+    // Before PHP 5.3 rawurlencode() replaced '~' by '%7E'. This behaviour
+    // was not RFC3986 conform. Later PHP versions kept '~' chars. To keep
+    // compatibility str_replace('%7E', '~',  is kept in the code.
+    // NOTE: a str_replace('+', ' ',  is not RFC3986 conform, see
+    // https://tools.ietf.org/html/rfc3986#section-2.1
     public static function urlencode_rfc3986($input) {
         if (is_array($input)) {
             return array_map(array(
@@ -702,18 +707,19 @@ class OAuthUtil {
             ), $input);
         } else {
             if (is_scalar($input)) {
-                return str_replace('+', ' ', str_replace('%7E', '~', rawurlencode($input)));
+                return str_replace('%7E', '~', rawurlencode($input)); 
             } else {
                 return '';
             }
         }
     }
 
-    // This decode function isn't taking into consideration the above
-    // modifications to the encoding process. However, this method doesn't
-    // seem to be used anywhere so leaving it as is.
+    // A RFC3986 conform decode function has to keep plus characters.
+    // Therefore rawurldecode must be called (instead of urldecode, which
+    // replaces '+' by ' ').
+    // The correct behaviour is important for the handling of XML outcome requests.
     public static function urldecode_rfc3986($string) {
-        return urldecode($string);
+        return rawurldecode($string);
     }
 
     // Utility function for turning the Authorization: header into
